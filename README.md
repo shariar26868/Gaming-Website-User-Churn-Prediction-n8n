@@ -1,541 +1,481 @@
-# 🎯 Churn Prediction ML System - Complete Project
-<img width="1688" height="482" alt="Screenshot 2025-12-04 111511" src="https://github.com/user-attachments/assets/a9c42332-38e1-4ab6-a703-518bdcfe47e9" />
+# 🎯 Churn Prediction ML System
 
-## 📁 Project Structure
+## 📚 Table of Contents
+- [Overview](#overview)
+- [System Architecture](#system-architecture)
+- [Installation](#installation)
+- [Project Files](#project-files)
+- [Configuration](#configuration)
+- [Usage Guide](#usage-guide)
+- [API Reference](#api-reference)
+- [Database Schema](#database-schema)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## 🎯 Overview
+
+A machine learning system that predicts customer churn risk for gaming/casino platforms by analyzing user behavior patterns. The system:
+
+- ✅ Analyzes user activity, deposits, and engagement
+- ✅ Calculates churn risk scores (0-100)
+- ✅ Categorizes users into risk levels (High/Medium/Low)
+- ✅ Suggests automated retention campaigns
+- ✅ Tracks financial impact and value at risk
+- ✅ Generates actionable insights for marketing teams
+
+**Key Metrics:**
+- **Churn Score:** 0-100 (higher = more likely to churn)
+- **Player Status:** Active, At Risk, Dormant, Churned
+- **Risk Levels:** Low (0-14), Low-Medium (15-29), Medium (30-59), High (60-100)
+
+---
+
+## 🏗️ System Architecture
+
 ```
-churn-prediction-system/
-├── ML_churn.js           # Main prediction engine
-├── ML_summary.js         # Summary aggregation
-├── README.md
-├── Churn Full Workflow for Deploy- Latest Version.json           
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────┐
+│   API Data  │────▶│  churn_ML.js │────▶│ML_summary.js │────▶│ Database │
+│ /v2/ml/churns│    │ (Prediction) │     │(Aggregation) │     │  Storage │
+└─────────────┘     └──────────────┘     └──────────────┘     └──────────┘
+                           │                      │
+                           ▼                      ▼
+                    ┌──────────────┐      ┌─────────────┐
+                    │User Churn    │      │Summary Stats│
+                    │Predictions   │      │+ Reports    │
+                    └──────────────┘      └─────────────┘
+```
 
+### Data Flow
+1. **Input:** User data from API endpoint (`/v2/ml/churns`)
+2. **Processing:** Calculate churn scores using behavioral analytics
+3. **Aggregation:** Generate summary statistics and insights
+4. **Storage:** Save to database for tracking and campaigns
+5. **Output:** Actionable retention strategies
+
+---
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js 14+ or workflow automation tool (n8n, Zapier, etc.)
+- MySQL 8.0+ or PostgreSQL 12+
+- API access to user data endpoint
+
+### Quick Setup
+
+```bash
+# 1. Clone or download project files
+git clone https://github.com/your-org/churn-prediction-ml.git
+cd churn-prediction-ml
+
+# 2. Install dependencies (if using standalone Node.js)
+npm install
+
+# 3. Set up database
+mysql -u root -p < database_schema.sql
+
+# 4. Configure environment variables
+cp .env.example .env
+# Edit .env with your database credentials
+
+# 5. Test the system
+node test_churn_prediction.js
 ```
 
 ---
 
-## 📄 FILE 1: `ML_churn.js`
+## 📁 Project Files
 
+### 1️⃣ `churn_ML.js` - Prediction Engine (Main Algorithm)
+
+**Purpose:** Analyzes individual user behavior and calculates churn risk
+
+**Key Features:**
+- Multi-factor scoring system (5 categories)
+- Threshold-based risk assessment
+- Automated retention action suggestions
+- Handles missing/incomplete data gracefully
+
+**Input Format:**
 ```javascript
-// ====================================================
-// CHURN PREDICTION ENGINE
-// ====================================================
-// Purpose: Analyzes user behavior and predicts churn risk
-// Input: User data from API endpoint
-// Output: Churn predictions with risk scores and retention actions
-// ====================================================
+{
+  id: "user_123",
+  email: "user@example.com",
+  days_since_last_game: 45,
+  days_since_last_deposit: 60,
+  total_games_played: 150,
+  total_deposit_amount: 2500.00,
+  bonus_cancellation_rate: 30.5,
+  // ... more fields
+}
+```
 
-// Get all users from API
-const response = $input.first().json;
-const users = response[0]?.data || response.data || [];
-const results = [];
+**Output Format:**
+```javascript
+{
+  user_id: "user_123",
+  churn_score: 75,
+  churn_risk: "🔴 High",
+  player_status: "At Risk",
+  risk_factors: [
+    "🔴 Inactive for 45 days",
+    "🟡 60 days since deposit"
+  ],
+  retention_actions: [
+    "⚠️ Priority: Engagement campaign",
+    "💳 Reload bonus: 150% up to $500"
+  ]
+}
+```
 
-// Define churn prediction thresholds
-const CHURN_THRESHOLDS = {
-  activity: {
-    critical: 60,      // 60+ days = high churn risk
-    warning: 30,       // 30-60 days = medium risk
-    safe: 7            // 0-7 days = active
+**Scoring Breakdown:**
+- **Game Activity (40 pts):** Last game played timing
+- **Recent Engagement (20 pts):** 7-day & 30-day activity
+- **Deposit Behavior (25 pts):** Deposit frequency & recency
+- **Bonus Engagement (15 pts):** Bonus completion/cancellation rates
+- **Account Lifecycle (10 pts):** New user onboarding success
+
+---
+
+### 2️⃣ `ML_summary.js` - Aggregation Engine
+
+**Purpose:** Generates summary statistics and prepares database-ready format
+
+**Key Features:**
+- Calculates distribution of risk levels
+- Identifies high-value users at risk
+- Generates campaign priorities
+- Cleans data (removes emojis for database)
+- Tracks top risk factors across all users
+
+**Output Structure:**
+```javascript
+{
+  summary: {
+    analysis_id: "CHURN_1733337600000",
+    total_users_analyzed: 1500,
+    high_risk_users: 120,
+    total_deposit_at_risk: "125000.00",
+    avg_churn_score: "32.50"
   },
-  deposit: {
-    inactive: 90,      // 90+ days since deposit
-    declining: 45      // 45-90 days
-  },
-  engagement: {
-    low_games: 10,     // Less than 10 games in period
-    no_activity: 0
-  },
-  bonus: {
-    high_cancel: 70,   // 70%+ cancellation = disengaged
-    zero_completion: 0
-  }
-};
+  database_record: { /* Flat structure for SQL */ },
+  user_churn_predictions: [ /* Array of cleaned user records */ ]
+}
+```
 
-for (let user of users) {
-  let churnRisk = "Low";
-  let churnScore = 0;
-  let riskFactors = [];
-  let retentionActions = [];
-  let playerStatus = "Active";
-  let churnProbability = 0;
+**Key Metrics Generated:**
+- Risk distribution (High/Medium/Low counts)
+- Status distribution (Churned/At Risk/Dormant/Active)
+- Financial impact (Total deposits at risk)
+- Campaign priorities (Urgent/Engagement/VIP counts)
+- Average churn score & days inactive
 
-  // Extract metrics
-  const daysSinceLastGame = parseFloat(user.days_since_last_game) || 999;
-  const daysSinceDeposit = parseFloat(user.days_since_last_deposit) || 999;
-  const totalDeposits = parseInt(user.total_deposits) || 0;
-  const totalGames = parseInt(user.total_games_played) || 0;
-  const gamesLast7Days = parseInt(user.games_last_7_days) || 0;
-  const gamesLast30Days = parseInt(user.games_last_30_days) || 0;
-  const bonusCancelRate = parseFloat(user.bonus_cancellation_rate) || 0;
-  const bonusCompletionRate = parseFloat(user.bonus_completion_rate) || 0;
-  const totalBonuses = parseInt(user.total_bonuses) || 0;
-  const depositAmount = parseFloat(user.total_deposit_amount) || 0;
-  const wagerAmount = parseFloat(user.total_wagered) || 0;
+---
 
-  // ========== CHURN RISK CALCULATION ==========
+### 3️⃣ `config.js` - Configuration
 
-  // 1. Game Activity Analysis (40 points max)
-  if (daysSinceLastGame >= CHURN_THRESHOLDS.activity.critical) {
-    churnScore += 40;
-    riskFactors.push(`🔴 No game activity for ${daysSinceLastGame.toFixed(0)} days`);
-    playerStatus = "Churned";
-  } else if (daysSinceLastGame >= CHURN_THRESHOLDS.activity.warning) {
-    churnScore += 25;
-    riskFactors.push(`🟡 Inactive for ${daysSinceLastGame.toFixed(0)} days`);
-    playerStatus = "At Risk";
-  } else if (daysSinceLastGame >= CHURN_THRESHOLDS.activity.safe) {
-    churnScore += 10;
-    riskFactors.push(`🟠 ${daysSinceLastGame.toFixed(0)} days since last game`);
-  }
+**Purpose:** Centralized configuration for easy tuning
 
-  // 2. Recent Engagement (20 points max)
-  if (gamesLast7Days === 0 && totalGames > 0) {
-    churnScore += 15;
-    riskFactors.push("🔴 Zero games in last 7 days");
-  }
-  if (gamesLast30Days === 0 && totalGames > 0) {
-    churnScore += 20;
-    riskFactors.push("🔴 Zero games in last 30 days");
-    playerStatus = "Dormant";
-  } else if (gamesLast30Days < CHURN_THRESHOLDS.engagement.low_games && totalGames > 50) {
-    churnScore += 10;
-    riskFactors.push(`🟡 Only ${gamesLast30Days} games in 30 days`);
-  }
-
-  // 3. Deposit Behavior (25 points max)
-  if (totalDeposits === 0 && totalGames > 100) {
-    churnScore += 20;
-    riskFactors.push("🔴 Never deposited (free player)");
-    retentionActions.push("💰 First deposit bonus: 200% + 100 free spins");
-  } else if (daysSinceDeposit >= CHURN_THRESHOLDS.deposit.inactive) {
-    churnScore += 25;
-    riskFactors.push(`🔴 ${daysSinceDeposit.toFixed(0)} days since last deposit`);
-    retentionActions.push("💳 Reload bonus: 150% up to $500");
-  } else if (daysSinceDeposit >= CHURN_THRESHOLDS.deposit.declining) {
-    churnScore += 15;
-    riskFactors.push(`🟡 ${daysSinceDeposit.toFixed(0)} days since deposit`);
-    retentionActions.push("💰 Win-back offer: 50 free spins");
-  }
-
-  // 4. Bonus Engagement (15 points max)
-  if (bonusCancelRate >= CHURN_THRESHOLDS.bonus.high_cancel && totalBonuses > 5) {
-    churnScore += 15;
-    riskFactors.push(`🟡 High bonus cancel rate (${bonusCancelRate.toFixed(0)}%)`);
-    retentionActions.push("🎁 No-wagering cashback offers");
-  }
-  if (bonusCompletionRate === CHURN_THRESHOLDS.bonus.zero_completion && totalBonuses > 3) {
-    churnScore += 10;
-    riskFactors.push("🔴 Never completed any bonus");
-  }
-
-  // 5. Account Lifecycle
-  const accountAge = Math.floor((new Date() - new Date(user.created_at)) / (1000 * 60 * 60 * 24));
-  if (accountAge < 30 && totalGames < 10) {
-    churnScore += 10;
-    riskFactors.push("🔴 New user, low engagement");
-    retentionActions.push("👋 Welcome campaign: Daily login rewards");
-  }
-
-  // ========== CHURN RISK LEVEL ==========
-  churnProbability = Math.min(churnScore, 100);
-
-  if (churnScore >= 60) {
-    churnRisk = "🔴 High";
-  } else if (churnScore >= 30) {
-    churnRisk = "🟡 Medium";
-  } else if (churnScore >= 15) {
-    churnRisk = "🟠 Low-Medium";
-  } else {
-    churnRisk = "🟢 Low";
-  }
-
-  // ========== RETENTION STRATEGY ==========
-  if (playerStatus === "Churned") {
-    retentionActions.push("🚨 Urgent: High-value reactivation offer");
-    retentionActions.push("📧 Email: 'We miss you - $50 bonus inside'");
-  } else if (playerStatus === "At Risk") {
-    retentionActions.push("⚠️ Priority: Engagement campaign");
-    retentionActions.push("🎮 Promote favorite games");
-  } else if (playerStatus === "Dormant") {
-    retentionActions.push("💤 Wake-up: 100 free spins + $20 bonus");
-  }
-
-  if (depositAmount > 500 && churnScore > 40) {
-    retentionActions.push("💎 VIP intervention: Personal account manager");
-  }
-
-  if (riskFactors.length === 0) {
-    riskFactors.push("✅ Active and engaged");
-    playerStatus = "Active";
-  }
-
-  // Only include users with meaningful data
-  if (totalGames > 0 || totalDeposits > 0 || totalBonuses > 0) {
-    results.push({
-      // User Info
-      user_id: user.id,
-      email: user.email,
-      name: (user.first_name || "") + " " + (user.last_name || ""),
-      country: user.country,
-      created_at: user.created_at,
-      account_age_days: accountAge,
-
-      // Churn Prediction
-      churn_risk: churnRisk,
-      churn_score: churnProbability,
-      churn_probability: `${churnProbability}%`,
-      player_status: playerStatus,
-      risk_factors: riskFactors,
-      retention_actions: retentionActions,
-
-      // Activity Metrics
-      days_since_last_game: daysSinceLastGame === 999 ? "Never" : daysSinceLastGame.toFixed(0),
-      days_since_last_deposit: daysSinceDeposit === 999 ? "Never" : daysSinceDeposit.toFixed(0),
-      games_last_7_days: gamesLast7Days,
-      games_last_30_days: gamesLast30Days,
-      total_games: totalGames,
-
-      // Financial Metrics
-      total_deposits: totalDeposits,
-      total_deposit_amount: depositAmount.toFixed(2),
-      total_wagered: wagerAmount.toFixed(2),
-      
-      // Bonus Behavior
-      total_bonuses: totalBonuses,
-      bonus_cancel_rate: bonusCancelRate.toFixed(1) + "%",
-      bonus_completion_rate: bonusCompletionRate.toFixed(1) + "%",
-
-      // Status
-      kyc_status: user.kyc_status,
-      is_vip: user.is_vip ? "Yes" : "No"
-    });
-  }
+**Adjustable Parameters:**
+```javascript
+THRESHOLDS: {
+  ACTIVITY_CRITICAL: 60,    // Adjust churn sensitivity
+  ACTIVITY_WARNING: 30,
+  DEPOSIT_INACTIVE: 90,
+  HIGH_BONUS_CANCEL: 70
 }
 
-// Sort by churn score (highest risk first)
-results.sort((a, b) => b.churn_score - a.churn_score);
+WEIGHTS: {
+  GAME_ACTIVITY: 40,        // Change scoring importance
+  DEPOSIT_BEHAVIOR: 25,
+  BONUS_ENGAGEMENT: 15
+}
+```
 
-// Calculate distribution
-const riskDistribution = results.reduce((acc, u) => {
-  acc[u.churn_risk] = (acc[u.churn_risk] || 0) + 1;
-  return acc;
-}, {});
+**When to Adjust:**
+- **Lower thresholds** → Catch churn earlier (more alerts)
+- **Higher thresholds** → Focus on severe cases only
+- **Change weights** → Prioritize different behavioral signals
 
-const statusDistribution = results.reduce((acc, u) => {
-  acc[u.player_status] = (acc[u.player_status] || 0) + 1;
-  return acc;
-}, {});
+---
 
-// Return results
-return [{
-  json: {
-    analysis_date: new Date().toISOString().split('T')[0],
-    total_users_analyzed: users.length,
-    users_predicted: results.length,
-    
-    // Summary Statistics
-    risk_distribution: riskDistribution,
-    status_distribution: statusDistribution,
-    high_risk_count: results.filter(u => u.churn_score >= 60).length,
-    immediate_action_required: results.filter(u => u.player_status === "Churned" || u.churn_score >= 70).length,
-    
-    // Predicted Users (sorted by risk)
-    predictions: results,
-    
-    // API Metadata & URLs
-    url: $input.first().json.meta?.next_page_url || null,
-    domain: $('Dynamically fetch the url,baseUrl,domain').first().json.domain,
-    baseUrl: $('Dynamically fetch the url,baseUrl,domain').first().json.baseUrl
-  }
-}];
+### 4️⃣ `database_schema.sql` - Database Setup
+
+**Tables Created:**
+
+1. **`churn_summary`** - Daily aggregated reports
+   - Analysis run metadata
+   - Risk distributions
+   - Campaign priorities
+   - Financial impact metrics
+
+2. **`user_churn_predictions`** - Individual user predictions
+   - User churn scores
+   - Risk factors (cleaned text)
+   - Retention actions suggested
+   - Activity & financial metrics
+
+3. **`retention_campaigns`** - Campaign tracking
+   - Campaign type & offers sent
+   - User engagement (opened/clicked/converted)
+   - ROI tracking
+
+**Views for Analytics:**
+- `v_high_risk_users` - Quick access to urgent cases
+- `v_daily_churn_trends` - Historical trend analysis
+- `v_campaign_performance` - Marketing ROI metrics
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file:
+
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=churn_prediction
+DB_USER=your_username
+DB_PASSWORD=your_password
+
+# API Configuration
+API_BASE_URL=https://api.yourdomain.com
+API_ENDPOINT=/v2/ml/churns
+API_KEY=your_api_key
+
+# Analysis Settings
+CHURN_THRESHOLD_CRITICAL=60
+CHURN_THRESHOLD_WARNING=30
+MIN_GAMES_FOR_ANALYSIS=0
+
+# Email Alerts
+ALERT_EMAIL=team@yourdomain.com
+ALERT_THRESHOLD_HIGH_RISK=50
+ALERT_THRESHOLD_DEPOSIT_RISK=100000
+```
+
+### Tuning Thresholds
+
+Edit `config.js` to adjust sensitivity:
+
+```javascript
+// More aggressive (catch early signs)
+ACTIVITY_CRITICAL: 45,  // Default: 60
+ACTIVITY_WARNING: 20,   // Default: 30
+
+// More conservative (focus on severe cases)
+ACTIVITY_CRITICAL: 90,
+ACTIVITY_WARNING: 60
 ```
 
 ---
 
-## 📄 FILE 2: `ML_summary.js`
+## 🚀 Usage Guide
 
+### Basic Workflow
+
+#### 1. **Fetch User Data**
 ```javascript
-// ====================================================
-// ML SUMMARY AGGREGATION
-// ====================================================
-// Purpose: Aggregates churn predictions and prepares data for database
-// Input: Output from churn_ML.js
-// Output: Summary statistics + formatted user records
-// ====================================================
+// Example: n8n HTTP Request Node
+GET https://api.yourdomain.com/v2/ml/churns
+Headers: {
+  "Authorization": "Bearer YOUR_API_KEY"
+}
+```
 
-// ========== GET DATA FROM PREVIOUS NODE ==========
-const inputData = $input.first().json;
-const results = inputData.predictions || [];
-const totalAnalyzed = inputData.total_users_analyzed || 0;
+#### 2. **Run Churn Prediction**
+```javascript
+// churn_ML.js processes the data
+const predictions = churn_ML(apiResponse);
+```
 
-// ========== SUMMARY DATA FOR DATABASE ==========
-const summaryData = {
-  // Run Information
-  analysis_id: `CHURN_${Date.now()}`, // Unique ID for this analysis run
-  analysis_date: new Date().toISOString(),
-  analyzed_at: new Date().toISOString().split('T')[0],
-  
-  // Overall Statistics
-  total_users_analyzed: totalAnalyzed,
-  total_users_predicted: results.length,
-  
-  // Risk Distribution
-  high_risk_users: results.filter(u => u.churn_score >= 60).length,
-  medium_risk_users: results.filter(u => u.churn_score >= 30 && u.churn_score < 60).length,
-  low_risk_users: results.filter(u => u.churn_score < 30).length,
-  
-  // Status Distribution
-  churned_users: results.filter(u => u.player_status === "Churned").length,
-  at_risk_users: results.filter(u => u.player_status === "At Risk").length,
-  dormant_users: results.filter(u => u.player_status === "Dormant").length,
-  active_users: results.filter(u => u.player_status === "Active").length,
-  
-  // Critical Metrics
-  immediate_action_required: results.filter(u => u.churn_score >= 70).length,
-  users_inactive_60plus_days: results.filter(u => {
-    const days = parseFloat(u.days_since_last_game);
-    return days >= 60 && days !== 999 && !isNaN(days);
-  }).length,
-  users_no_deposit_90plus_days: results.filter(u => {
-    const days = parseFloat(u.days_since_last_deposit);
-    return days >= 90 && days !== 999 && !isNaN(days);
-  }).length,
-  
-  // Value at Risk
-  high_value_at_risk: results.filter(u => {
-    const deposit = parseFloat(u.total_deposit_amount);
-    return deposit > 500 && u.churn_score >= 40;
-  }).length,
-  
-  total_deposit_at_risk: results
-    .filter(u => u.churn_score >= 60)
-    .reduce((sum, u) => sum + parseFloat(u.total_deposit_amount || 0), 0)
-    .toFixed(2),
-  
-  // Retention Campaign Priorities
-  urgent_reactivation_count: results.filter(u => u.player_status === "Churned").length,
-  engagement_campaign_count: results.filter(u => u.player_status === "At Risk").length,
-  dormant_wakeup_count: results.filter(u => u.player_status === "Dormant").length,
-  vip_intervention_count: results.filter(u => {
-    const deposit = parseFloat(u.total_deposit_amount);
-    return deposit > 500 && u.churn_score > 40;
-  }).length,
-  
-  // Average Metrics
-  avg_churn_score: results.length > 0 
-    ? (results.reduce((sum, u) => sum + u.churn_score, 0) / results.length).toFixed(2)
-    : "0.00",
-  avg_days_inactive: results.length > 0
-    ? (results.reduce((sum, u) => {
-        const days = parseFloat(u.days_since_last_game);
-        return sum + (days === 999 || isNaN(days) ? 0 : days);
-      }, 0) / results.length).toFixed(2)
-    : "0.00",
-  
-  // Top Risk Factors (Cleaned - most common)
-  top_risk_factors: Object.entries(
-    results
-      .flatMap(u => u.risk_factors || [])
-      .map(f => f.replace(/[🔴🟡🟠✅]/g, '').trim())
-      .reduce((acc, factor) => {
-        if (factor) acc[factor] = (acc[factor] || 0) + 1;
-        return acc;
-      }, {})
-  )
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([factor, count]) => `${factor} (${count} users)`)
-    .join('; '),
-  
-  // Data Source
-  data_source: "API /v2/ml/churns",
-  domain: inputData.domain || "N/A",
-  baseUrl: inputData.baseUrl || "N/A"
-};
+#### 3. **Generate Summary**
+```javascript
+// ML_summary.js aggregates results
+const summary = ML_summary(predictions);
+```
 
-// ========== DATABASE SAVE FORMAT ==========
-const databaseRecord = {
-  // Primary Key
-  id: summaryData.analysis_id,
-  
-  // Timestamps
-  created_at: summaryData.analysis_date,
-  analyzed_date: summaryData.analyzed_at,
-  
-  // Counts
-  total_analyzed: summaryData.total_users_analyzed,
-  total_predicted: summaryData.total_users_predicted,
-  
-  // Risk Levels
-  high_risk_count: summaryData.high_risk_users,
-  medium_risk_count: summaryData.medium_risk_users,
-  low_risk_count: summaryData.low_risk_users,
-  
-  // Player Status
-  churned_count: summaryData.churned_users,
-  at_risk_count: summaryData.at_risk_users,
-  dormant_count: summaryData.dormant_users,
-  active_count: summaryData.active_users,
-  
-  // Critical Alerts
-  urgent_action_count: summaryData.immediate_action_required,
-  high_value_risk_count: summaryData.high_value_at_risk,
-  
-  // Financial Impact
-  total_deposit_at_risk: summaryData.total_deposit_at_risk,
-  
-  // Averages
-  avg_churn_score: summaryData.avg_churn_score,
-  avg_days_inactive: summaryData.avg_days_inactive,
-  
-  // Campaign Priorities (Flat Structure)
-  urgent_reactivation_count: summaryData.urgent_reactivation_count,
-  engagement_campaign_count: summaryData.engagement_campaign_count,
-  dormant_wakeup_count: summaryData.dormant_wakeup_count,
-  vip_intervention_count: summaryData.vip_intervention_count,
-  
-  // Top Risk Factors (Clean Text)
-  top_risk_factors: summaryData.top_risk_factors,
-  
-  // Metadata
-  data_source: summaryData.data_source,
-  domain: summaryData.domain,
-  base_url: summaryData.baseUrl
-};
+#### 4. **Save to Database**
+```javascript
+// Insert summary record
+INSERT INTO churn_summary VALUES (...);
 
-// ========== PREPARE USER DATA FOR DATABASE (IMPORTANT COLUMNS ONLY) ==========
-const userChurnData = results.map(user => {
-  // Clean risk factors - remove emojis and format nicely
-  const cleanRiskFactors = (user.risk_factors || [])
-    .map(factor => factor.replace(/[🔴🟡🟠✅]/g, '').trim())
-    .join('; ');
-  
-  // Clean retention actions - remove emojis and format nicely
-  const cleanRetentionActions = (user.retention_actions || [])
-    .map(action => action.replace(/[💰💳🔥🎁🏆🎮🚨📧⚠️💤💎👋]/g, '').trim())
-    .join('; ');
+// Bulk insert user predictions
+INSERT INTO user_churn_predictions VALUES (...);
+```
 
-  return {
-    // ✅ ADD METADATA TO EACH USER (IMPORTANT!)
-    url: inputData.url,
-    domain: inputData.domain,
-    baseUrl: inputData.baseUrl,
-    
-    // User Identity
-    user_id: user.user_id,
-    email: user.email,
-    country: user.country,
-    
-    // Churn Prediction (Core)
-    churn_risk_level: user.churn_risk.replace(/[🔴🟡🟠🟢]/g, '').trim(),
-    churn_score: user.churn_score,
-    player_status: user.player_status,
-    
-    // Risk Analysis (Cleaned)
-    risk_factors: cleanRiskFactors || null,
-    retention_actions: cleanRetentionActions || null,
-    
-    // Activity Metrics (Key Indicators)
-    days_since_last_game: user.days_since_last_game === "Never" ? 999 : parseFloat(user.days_since_last_game),
-    days_since_last_deposit: user.days_since_last_deposit === "Never" ? 999 : parseFloat(user.days_since_last_deposit),
-    games_last_7_days: user.games_last_7_days,
-    games_last_30_days: user.games_last_30_days,
-    total_games: user.total_games,
-    
-    // Financial Data (Revenue Impact)
-    total_deposits: user.total_deposits,
-    total_deposit_amount: parseFloat(user.total_deposit_amount || 0),
-    total_wagered: parseFloat(user.total_wagered || 0),
-    
-    // Bonus Behavior (Engagement Indicator)
-    total_bonuses: user.total_bonuses,
-    bonus_cancel_rate: parseFloat(user.bonus_cancel_rate || 0),
-    bonus_completion_rate: parseFloat(user.bonus_completion_rate || 0),
-    
-    // Account Info
-    account_age_days: user.account_age_days,
-    kyc_status: user.kyc_status,
-    is_vip: user.is_vip === "Yes" ? true : false,  // ✅ Convert to boolean
-    
-    // Timestamps
-    analyzed_at: summaryData.analyzed_at,
-    analysis_id: summaryData.analysis_id,
-    created_at: new Date().toISOString()
-  };
-});
+### Automation Setup (n8n Example)
 
-// ✅ RETURN FORMAT - Keep everything for flexibility
-return {
-  summary: summaryData,
-  database_record: databaseRecord,
-  user_churn_predictions: userChurnData,
-  total_user_records: userChurnData.length,
-  url: inputData.url || null,
-  domain: inputData.domain || null,
-  baseUrl: inputData.baseUrl || null
-};
+```
+┌──────────────┐
+│   Schedule   │ Trigger: Daily at 2 AM
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│  HTTP Request│ GET /v2/ml/churns
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│  Function 1  │ Run churn_ML.js
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│  Function 2  │ Run ML_summary.js
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│MySQL Insert 1│ Save churn_summary
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│MySQL Insert 2│ Save user predictions
+└──────────────┘
 ```
 
 ---
 
-## 📄 FILE 3: `config.js`
+## 📊 API Reference
 
+### Input Data Schema
+
+**Required Fields:**
 ```javascript
-// ====================================================
-// CONFIGURATION FILE
-// ====================================================
-
-module.exports = {
-  // API Configuration
-  API: {
-    ENDPOINT: '/v2/ml/churns',
-    TIMEOUT: 30000,
-    RETRY_COUNT: 3
-  },
-
-  // Churn Thresholds (can be tuned)
-  THRESHOLDS: {
-    ACTIVITY_CRITICAL: 60,    // Days
-    ACTIVITY_WARNING: 30,     // Days
-    ACTIVITY_SAFE: 7,         // Days
-    DEPOSIT_INACTIVE: 90,     // Days
-    DEPOSIT_DECLINING: 45,    // Days
-    LOW_GAMES: 10,            // Count
-    HIGH_BONUS_CANCEL: 70,    // Percentage
-  },
-
-  // Scoring Weights
-  WEIGHTS: {
-    GAME_ACTIVITY: 40,
-    RECENT_ENGAGEMENT: 20,
-    DEPOSIT_BEHAVIOR: 25,
-    BONUS_ENGAGEMENT: 15,
-    ACCOUNT_LIFECYCLE: 10
-  },
-
-  // Risk Levels
-  RISK_LEVELS: {
-    HIGH: 60,           // Score >= 60
-    MEDIUM: 30,         // Score >= 30
-    LOW_MEDIUM: 15,     // Score >= 15
-    LOW: 0              // Score < 15
-  },
-
-  // Database Tables
-  DATABASE: {
-    SUMMARY_TABLE: 'churn_summary',
-    PREDICTIONS_TABLE: 'user_churn_predictions'
-  },
-
-  // Retention Offers
-  RETENTION_OFFERS: {
-    FIRST_DEPOSIT: "200% + 100 free spins",
-    RELOAD_BONUS: "150% up to $500",
-    WINBACK_OFFER: "50 free spins",
-    CASHBACK: "No-wagering cashback offers",
-    VIP_INTERVENTION: "Personal account manager",
-    WELCOME_CAMPAIGN: "Daily login rewards",
-    DORMANT_WAKEUP: "100 free spins + $20 bonus",
-    URGENT_REACTIVATION: "$50 bonus inside"
-  }
-};
+{
+  id: string,                      // User ID (required)
+  email: string,                   // User email
+  days_since_last_game: number,    // Days since last activity
+  days_since_last_deposit: number, // Days since last deposit
+  total_games_played: number,      // Lifetime game count
+  total_deposits: number,          // Lifetime deposit count
+  total_deposit_amount: number     // Total deposited ($)
+}
 ```
+
+**Optional Fields:**
+```javascript
+{
+  games_last_7_days: number,
+  games_last_30_days: number,
+  bonus_cancellation_rate: number,  // Percentage
+  bonus_completion_rate: number,    // Percentage
+  total_bonuses: number,
+  total_wagered: number,
+  kyc_status: string,
+  is_vip: boolean,
+  country: string,
+  created_at: timestamp
+}
+```
+
+### Output Data Schema
+
+**User Prediction Record:**
+```javascript
+{
+  user_id: "USER_123",
+  churn_score: 75,                    // 0-100
+  churn_risk_level: "High",           // Low/Medium/High
+  player_status: "At Risk",           // Active/At Risk/Dormant/Churned
+  risk_factors: "Inactive for 45 days; Zero games in last 30 days",
+  retention_actions: "Priority engagement campaign; Reload bonus 150%",
+  days_since_last_game: 45,
+  total_deposit_amount: 2500.00,
+  analyzed_at: "2024-12-04"
+}
+```
+
+**Summary Record:**
+```javascript
+{
+  analysis_id: "CHURN_1733337600000",
+  analyzed_date: "2024-12-04",
+  total_users_analyzed: 1500,
+  high_risk_count: 120,
+  medium_risk_count: 350,
+  low_risk_count: 1030,
+  total_deposit_at_risk: "125000.00",
+  avg_churn_score: "32.50",
+  urgent_action_count: 45
+}
+```
+
+---
+
+## 🗄️ Database Schema
+
+### Table: `churn_summary`
+Stores daily aggregated analysis results.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | VARCHAR(50) | Primary key (CHURN_timestamp) |
+| `analyzed_date` | DATE | Analysis run date |
+| `total_analyzed` | INT | Users in dataset |
+| `high_risk_count` | INT | Users with score ≥60 |
+| `total_deposit_at_risk` | DECIMAL | $ at risk from high-risk users |
+| `avg_churn_score` | DECIMAL | Average score across all users |
+| `top_risk_factors` | TEXT | Most common risk factors |
+
+### Table: `user_churn_predictions`
+Stores individual user predictions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user_id` | VARCHAR(50) | User identifier |
+| `churn_score` | INT | Risk score (0-100) |
+| `player_status` | VARCHAR(20) | Active/At Risk/Dormant/Churned |
+| `risk_factors` | TEXT | Reasons for churn risk |
+| `retention_actions` | TEXT | Suggested campaigns |
+| `total_deposit_amount` | DECIMAL | User lifetime value |
+| `analyzed_at` | DATE | Prediction date |
+
+### Table: `retention_campaigns`
+Tracks marketing campaigns and ROI.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `campaign_id` | VARCHAR(50) | Unique campaign ID |
+| `user_id` | VARCHAR(50) | Target user |
+| `campaign_type` | VARCHAR(50) | Reactivation/Engagement/VIP |
+| `converted` | BOOLEAN | Did user return? |
+| `conversion_amount` | DECIMAL | Revenue generated |
+
+---
+
+## 🚀 Deployment
+
+### Production Checklist
+
+- [ ] Set up production database
+- [ ] Configure environment variables
+- [ ] Set up daily cron job / scheduled workflow
+- [ ] Enable error monitoring
+- [ ] Set up email alerts for high-risk users
+- [ ] Configure database backups
+- [ ] Test with sample data
+- [ ] Document custom threshold adjustments
+
+### Recommended Schedule
+
+```bash
+# Daily analysis (early morning before business hours)
+0 2 * * * /usr/bin/node /path/to/run_analysis.js
+
+# Weekly summary report
+0 9 * * 1 /usr/bin/node /path/to/weekly_report.js
+```
+
+### Performance Optimization
+
+**For large datasets (10,000+ users):**
+1. Enable database indexes (already in schema)
+2. Process in batches of 1,000 users
+3. Use database connection pooling
+4. Cache API responses if data doesn't change frequently
+
+---
