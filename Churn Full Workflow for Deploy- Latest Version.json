@@ -1,0 +1,415 @@
+{
+  "name": "Churn Full Workflow for Deploy- Latest Version",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://canada777.com/api/v2/ml/churns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Basic canada777"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1392,
+        304
+      ],
+      "id": "b3ceacf3-99d9-49eb-85ab-5164e3481873",
+      "name": "POST DATA",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.first().json.user_churn_predictions;\nconst formattedPredictions = inputData.map(item => {\n  return {\n    user_id: item.user_id,\n    email: item.email,\n    churn_risk: item.churn_risk_level,\n    status: item.player_status,     \n    ...item \n  };\n});\nreturn {\n  json: {\n    predictions: formattedPredictions\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        304
+      ],
+      "id": "d7215544-110f-4085-91c3-83658b076055",
+      "name": "Data format"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0674b3c-23e3-4c82-a431-b1c9bddb3366",
+              "name": "url",
+              "value": "={{ $('Data format').item.json.predictions[0].url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2128,
+        304
+      ],
+      "id": "1b6ba05c-9eea-4aef-9d2c-01c10f43612d",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1648,
+        304
+      ],
+      "id": "f0a5168f-a906-46f6-ba10-9262c63b0adb",
+      "name": "Wait2",
+      "webhookId": "a32a0e55-8671-4d3d-a969-3493284e8c8a"
+    },
+    {
+      "parameters": {
+        "jsCode": "return{baseUrl:$input.first().json.baseUrl, domain: $input.first().json.domain,url: $input.first().json.url };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ],
+      "id": "0255374d-6770-4563-87e3-08bb2f2cc598",
+      "name": "Dynamically fetch the url,baseUrl,domain2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Basic canada777"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        464,
+        304
+      ],
+      "id": "edf83ff8-1183-46e4-840d-13d71f7b8a87",
+      "name": "Get the URL2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// // Get all users from API\n// const response = $input.first().json;\n// const users = response[0]?.data || response.data || [];\n// const results = [];\n\n// // Define segmentation thresholds (tunable)\n// const THRESHOLDS = {\n//   deposit: {\n//     high: 1000,\n//     medium: 200\n//   },\n//   frequency: {\n//     high: 15,\n//     medium: 5\n//   },\n//   betSize: {\n//     high: 5,\n//     medium: 1\n//   },\n//   bonusClaim: {\n//     hunter: 50,\n//     moderate: 20\n//   },\n//   wagering: {\n//     grinder: 5,\n//     casual: 2\n//   },\n//   recency: {\n//     active: 7,\n//     dormant: 30\n//   }\n// };\n\n// for (let user of users) {\n//   let segment = \"Unknown\";\n//   let segmentScore = 0;\n//   let traits = [];\n//   let suggestions = [];\n//   let valueLevel = \"Low\";\n\n//   const depositTotal = parseFloat(user.total_deposit_amount) || 0;\n//   const depositFreq = parseInt(user.deposit_frequency) || 0;\n//   const avgBet = parseFloat(user.avg_bet_size) || 0;\n//   const bonusesClaimed = parseInt(user.total_bonuses_claimed) || 0;\n//   const avgWager = parseFloat(user.avg_wagering_completion) || 0;\n//   const recency = parseFloat(user.deposit_recency) || 999;\n//   const gamesPlayed = parseInt(user.total_games_played) || 0;\n//   const uniqueGames = parseInt(user.unique_games_played) || 0;\n\n//   // ========== Value Scoring ==========\n//   if (depositTotal >= THRESHOLDS.deposit.high) {\n//     segmentScore += 30;\n//     traits.push(\"High Depositor\");\n//     valueLevel = \"High\";\n//   } else if (depositTotal >= THRESHOLDS.deposit.medium) {\n//     segmentScore += 15;\n//     traits.push(\"Medium Depositor\");\n//     valueLevel = \"Medium\";\n//   }\n\n//   if (depositFreq >= THRESHOLDS.frequency.high) {\n//     segmentScore += 25;\n//     traits.push(\"Frequent Depositor\");\n//   } else if (depositFreq >= THRESHOLDS.frequency.medium) {\n//     segmentScore += 10;\n//     traits.push(\"Regular Depositor\");\n//   }\n\n//   if (avgBet >= THRESHOLDS.betSize.high) {\n//     segmentScore += 30;\n//     traits.push(\"High Roller\");\n//     valueLevel = valueLevel === \"High\" ? \"VIP\" : \"High\";\n//   } else if (avgBet >= THRESHOLDS.betSize.medium) {\n//     segmentScore += 15;\n//     traits.push(\"Mid-Stakes Player\");\n//   }\n\n//   // ========== Behavioral Patterns ==========\n//   if (bonusesClaimed >= THRESHOLDS.bonusClaim.hunter) {\n//     segmentScore += 20;\n//     traits.push(\"Bonus Hunter\");\n//     suggestions.push(\"🎁 Offer no-wagering or cashback bonuses\");\n//   } else if (bonusesClaimed >= THRESHOLDS.bonusClaim.moderate) {\n//     segmentScore += 10;\n//     traits.push(\"Bonus Enthusiast\");\n//     suggestions.push(\"🎁 Promote bonus leaderboard\");\n//   }\n\n//   if (avgWager >= THRESHOLDS.wagering.grinder) {\n//     segmentScore += 25;\n//     traits.push(\"Grinder\");\n//     suggestions.push(\"🏆 Reward loyalty points faster\");\n//   } else if (avgWager <= THRESHOLDS.wagering.casual && gamesPlayed > 100) {\n//     segmentScore += 10;\n//     traits.push(\"Casual Grinder\");\n//   }\n\n//   if (uniqueGames >= 1000) {\n//     segmentScore += 20;\n//     traits.push(\"Game Explorer\");\n//     suggestions.push(\"🎮 Recommend new game releases\");\n//   }\n\n//   if (recency <= THRESHOLDS.recency.active) {\n//     segmentScore += 15;\n//     traits.push(\"Active Player\");\n//   } else if (recency > THRESHOLDS.recency.dormant) {\n//     traits.push(\"Dormant\");\n//     suggestions.push(\"🔥 Reactivation: 50 free spins + $10 bonus\");\n//   }\n\n//   // ========== Final Segment Assignment ==========\n//   if (traits.includes(\"High Roller\") || valueLevel === \"VIP\") {\n//     segment = \"🟦 VIP / High Roller\";\n//   } else if (traits.includes(\"Bonus Hunter\") && bonusesClaimed > 60) {\n//     segment = \"🟪 Bonus Hunter\";\n//   } else if (traits.includes(\"Grinder\") && avgWager >= 5) {\n//     segment = \"🟩 Grinder\";\n//   } else if (depositFreq >= 20 && depositTotal > 500) {\n//     segment = \"🟨 Loyal Regular\";\n//   } else if (recency > 60 || depositTotal === 0) {\n//     segment = \"⚪ At Risk / Churned\";\n//   } else if (gamesPlayed > 500) {\n//     segment = \"🟫 Engaged Casual\";\n//   } else {\n//     segment = \"⬜ New / Low Activity\";\n//   }\n\n//   // Only include if meaningful data exists\n//   if (depositTotal > 0 || gamesPlayed > 0 || bonusesClaimed > 0) {\n//     results.push({\n//       // User Info\n//       user_id: user.id,\n//       email: user.email,\n//       name: (user.first_name || \"\") + \" \" + (user.last_name || \"\"),\n//       country: user.country,\n//       currency: user.currency,\n//       player_type_detected: user.player_type || \"N/A\",\n\n//       // Segmentation Output\n//       segment: segment,\n//       segment_score: Math.min(segmentScore, 100),\n//       value_level: valueLevel,\n//       key_traits: traits,\n//       personalized_suggestions: suggestions,\n\n//       // Core Metrics\n//       total_deposit: depositTotal.toFixed(2),\n//       deposit_frequency: depositFreq,\n//       avg_deposit: parseFloat(user.avg_deposit_size || 0).toFixed(2),\n//       deposit_recency_days: recency.toFixed(1),\n//       avg_bet_size: avgBet.toFixed(2),\n//       total_games: gamesPlayed,\n//       unique_games: uniqueGames,\n//       bonuses_claimed: bonusesClaimed,\n//       avg_wagering: avgWager.toFixed(2),\n//       preferred_payment: user.preferred_payment_method || \"Unknown\",\n//       is_vip: user.is_vip ? \"Yes\" : \"No\",\n//       kyc_status: user.kyc_status\n//     });\n//   }\n// }\n\n// // Sort by segment score (highest value/engagement first)\n// results.sort((a, b) => b.segment_score - a.segment_score);\n\n// // Summary Output\n// return [{\n//   json: {\n//     analyzed_date: new Date().toISOString().split('T')[0],\n//     total_users_segmented: users.length,\n//     segments_found: results.length,\n//     segment_distribution: results.reduce((acc, u) => {\n//       acc[u.segment] = (acc[u.segment] || 0) + 1;\n//       return acc;\n//     }, {}),\n//     segmented_users: results,\n//     url:$input.first().json.meta.next_page_url ,\n//     domain: $('Dynamically fetch the url,baseUrl,domain2').first().json.domain ,\n//     baseUrl: $('Dynamically fetch the url,baseUrl,domain2').first().json.baseUrl\n//   }\n// }];\n\n\n\n\n\n\n// Get all users from API\nconst response = $input.first().json;\nconst users = response[0]?.data || response.data || [];\nconst results = [];\n\n// Define churn prediction thresholds\nconst CHURN_THRESHOLDS = {\n  activity: {\n    critical: 60,      // 60+ days = high churn risk\n    warning: 30,       // 30-60 days = medium risk\n    safe: 7            // 0-7 days = active\n  },\n  deposit: {\n    inactive: 90,      // 90+ days since deposit\n    declining: 45      // 45-90 days\n  },\n  engagement: {\n    low_games: 10,     // Less than 10 games in period\n    no_activity: 0\n  },\n  bonus: {\n    high_cancel: 70,   // 70%+ cancellation = disengaged\n    zero_completion: 0\n  }\n};\n\nfor (let user of users) {\n  let churnRisk = \"Low\";\n  let churnScore = 0;\n  let riskFactors = [];\n  let retentionActions = [];\n  let playerStatus = \"Active\";\n  let churnProbability = 0;\n\n  // Extract metrics\n  const daysSinceLastGame = parseFloat(user.days_since_last_game) || 999;\n  const daysSinceDeposit = parseFloat(user.days_since_last_deposit) || 999;\n  const totalDeposits = parseInt(user.total_deposits) || 0;\n  const totalGames = parseInt(user.total_games_played) || 0;\n  const gamesLast7Days = parseInt(user.games_last_7_days) || 0;\n  const gamesLast30Days = parseInt(user.games_last_30_days) || 0;\n  const bonusCancelRate = parseFloat(user.bonus_cancellation_rate) || 0;\n  const bonusCompletionRate = parseFloat(user.bonus_completion_rate) || 0;\n  const totalBonuses = parseInt(user.total_bonuses) || 0;\n  const depositAmount = parseFloat(user.total_deposit_amount) || 0;\n  const wagerAmount = parseFloat(user.total_wagered) || 0;\n\n  // ========== CHURN RISK CALCULATION ==========\n\n  // 1. Game Activity Analysis (40 points max)\n  if (daysSinceLastGame >= CHURN_THRESHOLDS.activity.critical) {\n    churnScore += 40;\n    riskFactors.push(`🔴 No game activity for ${daysSinceLastGame.toFixed(0)} days`);\n    playerStatus = \"Churned\";\n  } else if (daysSinceLastGame >= CHURN_THRESHOLDS.activity.warning) {\n    churnScore += 25;\n    riskFactors.push(`🟡 Inactive for ${daysSinceLastGame.toFixed(0)} days`);\n    playerStatus = \"At Risk\";\n  } else if (daysSinceLastGame >= CHURN_THRESHOLDS.activity.safe) {\n    churnScore += 10;\n    riskFactors.push(`🟠 ${daysSinceLastGame.toFixed(0)} days since last game`);\n  }\n\n  // 2. Recent Engagement (20 points max)\n  if (gamesLast7Days === 0 && totalGames > 0) {\n    churnScore += 15;\n    riskFactors.push(\"🔴 Zero games in last 7 days\");\n  }\n  if (gamesLast30Days === 0 && totalGames > 0) {\n    churnScore += 20;\n    riskFactors.push(\"🔴 Zero games in last 30 days\");\n    playerStatus = \"Dormant\";\n  } else if (gamesLast30Days < CHURN_THRESHOLDS.engagement.low_games && totalGames > 50) {\n    churnScore += 10;\n    riskFactors.push(`🟡 Only ${gamesLast30Days} games in 30 days`);\n  }\n\n  // 3. Deposit Behavior (25 points max)\n  if (totalDeposits === 0 && totalGames > 100) {\n    churnScore += 20;\n    riskFactors.push(\"🔴 Never deposited (free player)\");\n    retentionActions.push(\"💰 First deposit bonus: 200% + 100 free spins\");\n  } else if (daysSinceDeposit >= CHURN_THRESHOLDS.deposit.inactive) {\n    churnScore += 25;\n    riskFactors.push(`🔴 ${daysSinceDeposit.toFixed(0)} days since last deposit`);\n    retentionActions.push(\"💳 Reload bonus: 150% up to $500\");\n  } else if (daysSinceDeposit >= CHURN_THRESHOLDS.deposit.declining) {\n    churnScore += 15;\n    riskFactors.push(`🟡 ${daysSinceDeposit.toFixed(0)} days since deposit`);\n    retentionActions.push(\"💰 Win-back offer: 50 free spins\");\n  }\n\n  // 4. Bonus Engagement (15 points max)\n  if (bonusCancelRate >= CHURN_THRESHOLDS.bonus.high_cancel && totalBonuses > 5) {\n    churnScore += 15;\n    riskFactors.push(`🟡 High bonus cancel rate (${bonusCancelRate.toFixed(0)}%)`);\n    retentionActions.push(\"🎁 No-wagering cashback offers\");\n  }\n  if (bonusCompletionRate === CHURN_THRESHOLDS.bonus.zero_completion && totalBonuses > 3) {\n    churnScore += 10;\n    riskFactors.push(\"🔴 Never completed any bonus\");\n  }\n\n  // 5. Account Lifecycle\n  const accountAge = Math.floor((new Date() - new Date(user.created_at)) / (1000 * 60 * 60 * 24));\n  if (accountAge < 30 && totalGames < 10) {\n    churnScore += 10;\n    riskFactors.push(\"🔴 New user, low engagement\");\n    retentionActions.push(\"👋 Welcome campaign: Daily login rewards\");\n  }\n\n  // ========== CHURN RISK LEVEL ==========\n  churnProbability = Math.min(churnScore, 100);\n\n  if (churnScore >= 60) {\n    churnRisk = \"🔴 High\";\n  } else if (churnScore >= 30) {\n    churnRisk = \"🟡 Medium\";\n  } else if (churnScore >= 15) {\n    churnRisk = \"🟠 Low-Medium\";\n  } else {\n    churnRisk = \"🟢 Low\";\n  }\n\n  // ========== RETENTION STRATEGY ==========\n  if (playerStatus === \"Churned\") {\n    retentionActions.push(\"🚨 Urgent: High-value reactivation offer\");\n    retentionActions.push(\"📧 Email: 'We miss you - $50 bonus inside'\");\n  } else if (playerStatus === \"At Risk\") {\n    retentionActions.push(\"⚠️ Priority: Engagement campaign\");\n    retentionActions.push(\"🎮 Promote favorite games\");\n  } else if (playerStatus === \"Dormant\") {\n    retentionActions.push(\"💤 Wake-up: 100 free spins + $20 bonus\");\n  }\n\n  if (depositAmount > 500 && churnScore > 40) {\n    retentionActions.push(\"💎 VIP intervention: Personal account manager\");\n  }\n\n  if (riskFactors.length === 0) {\n    riskFactors.push(\"✅ Active and engaged\");\n    playerStatus = \"Active\";\n  }\n\n  // Only include users with meaningful data\n  if (totalGames > 0 || totalDeposits > 0 || totalBonuses > 0) {\n    results.push({\n      // User Info\n      user_id: user.id,\n      email: user.email,\n      name: (user.first_name || \"\") + \" \" + (user.last_name || \"\"),\n      country: user.country,\n      created_at: user.created_at,\n      account_age_days: accountAge,\n\n      // Churn Prediction\n      churn_risk: churnRisk,\n      churn_score: churnProbability,\n      churn_probability: `${churnProbability}%`,\n      player_status: playerStatus,\n      risk_factors: riskFactors,\n      retention_actions: retentionActions,\n\n      // Activity Metrics\n      days_since_last_game: daysSinceLastGame === 999 ? \"Never\" : daysSinceLastGame.toFixed(0),\n      days_since_last_deposit: daysSinceDeposit === 999 ? \"Never\" : daysSinceDeposit.toFixed(0),\n      games_last_7_days: gamesLast7Days,\n      games_last_30_days: gamesLast30Days,\n      total_games: totalGames,\n\n      // Financial Metrics\n      total_deposits: totalDeposits,\n      total_deposit_amount: depositAmount.toFixed(2),\n      total_wagered: wagerAmount.toFixed(2),\n      \n      // Bonus Behavior\n      total_bonuses: totalBonuses,\n      bonus_cancel_rate: bonusCancelRate.toFixed(1) + \"%\",\n      bonus_completion_rate: bonusCompletionRate.toFixed(1) + \"%\",\n\n      // Status\n      kyc_status: user.kyc_status,\n      is_vip: user.is_vip ? \"Yes\" : \"No\"\n    });\n  }\n}\n\n// Sort by churn score (highest risk first)\nresults.sort((a, b) => b.churn_score - a.churn_score);\n\n// Calculate distribution\nconst riskDistribution = results.reduce((acc, u) => {\n  acc[u.churn_risk] = (acc[u.churn_risk] || 0) + 1;\n  return acc;\n}, {});\n\nconst statusDistribution = results.reduce((acc, u) => {\n  acc[u.player_status] = (acc[u.player_status] || 0) + 1;\n  return acc;\n}, {});\n\n// Return results\nreturn [{\n  json: {\n    analysis_date: new Date().toISOString().split('T')[0],\n    total_users_analyzed: users.length,\n    users_predicted: results.length,\n    \n    // Summary Statistics\n    risk_distribution: riskDistribution,\n    status_distribution: statusDistribution,\n    high_risk_count: results.filter(u => u.churn_score >= 60).length,\n    immediate_action_required: results.filter(u => u.player_status === \"Churned\" || u.churn_score >= 70).length,\n    \n    // Predicted Users (sorted by risk)\n    predictions: results,\n    \n    // API Metadata & URLs\n    url: $input.first().json.meta?.next_page_url || null,\n    domain: $('Dynamically fetch the url,baseUrl,domain2').first().json.domain,\n    baseUrl: $('Dynamically fetch the url,baseUrl,domain2').first().json.baseUrl\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        304
+      ],
+      "id": "e58b598a-be38-40fb-80bd-bd7f3456de0c",
+      "name": "ML Analysis2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// // ========== GET DATA FROM PREVIOUS NODE ==========\n// const inputData = $input.first().json;\n// const results = inputData.predictions || [];\n// const totalAnalyzed = inputData.total_users_analyzed || 0;\n\n// // ========== SUMMARY DATA FOR DATABASE ==========\n// const summaryData = {\n//   // Run Information\n//   analysis_id: `CHURN_${Date.now()}`, // Unique ID for this analysis run\n//   analysis_date: new Date().toISOString(),\n//   analyzed_at: new Date().toISOString().split('T')[0],\n  \n//   // Overall Statistics\n//   total_users_analyzed: totalAnalyzed,\n//   total_users_predicted: results.length,\n  \n//   // Risk Distribution\n//   high_risk_users: results.filter(u => u.churn_score >= 60).length,\n//   medium_risk_users: results.filter(u => u.churn_score >= 30 && u.churn_score < 60).length,\n//   low_risk_users: results.filter(u => u.churn_score < 30).length,\n  \n//   // Status Distribution\n//   churned_users: results.filter(u => u.player_status === \"Churned\").length,\n//   at_risk_users: results.filter(u => u.player_status === \"At Risk\").length,\n//   dormant_users: results.filter(u => u.player_status === \"Dormant\").length,\n//   active_users: results.filter(u => u.player_status === \"Active\").length,\n  \n//   // Critical Metrics\n//   immediate_action_required: results.filter(u => u.churn_score >= 70).length,\n//   users_inactive_60plus_days: results.filter(u => {\n//     const days = parseFloat(u.days_since_last_game);\n//     return days >= 60 && days !== 999 && !isNaN(days);\n//   }).length,\n//   users_no_deposit_90plus_days: results.filter(u => {\n//     const days = parseFloat(u.days_since_last_deposit);\n//     return days >= 90 && days !== 999 && !isNaN(days);\n//   }).length,\n  \n//   // Value at Risk\n//   high_value_at_risk: results.filter(u => {\n//     const deposit = parseFloat(u.total_deposit_amount);\n//     return deposit > 500 && u.churn_score >= 40;\n//   }).length,\n  \n//   total_deposit_at_risk: results\n//     .filter(u => u.churn_score >= 60)\n//     .reduce((sum, u) => sum + parseFloat(u.total_deposit_amount || 0), 0)\n//     .toFixed(2),\n  \n//   // Retention Campaign Priorities\n//   urgent_reactivation_count: results.filter(u => u.player_status === \"Churned\").length,\n//   engagement_campaign_count: results.filter(u => u.player_status === \"At Risk\").length,\n//   dormant_wakeup_count: results.filter(u => u.player_status === \"Dormant\").length,\n//   vip_intervention_count: results.filter(u => {\n//     const deposit = parseFloat(u.total_deposit_amount);\n//     return deposit > 500 && u.churn_score > 40;\n//   }).length,\n  \n//   // Average Metrics\n//   avg_churn_score: results.length > 0 \n//     ? (results.reduce((sum, u) => sum + u.churn_score, 0) / results.length).toFixed(2)\n//     : \"0.00\",\n//   avg_days_inactive: results.length > 0\n//     ? (results.reduce((sum, u) => {\n//         const days = parseFloat(u.days_since_last_game);\n//         return sum + (days === 999 || isNaN(days) ? 0 : days);\n//       }, 0) / results.length).toFixed(2)\n//     : \"0.00\",\n  \n//   // Top Risk Factors (Cleaned - most common)\n//   top_risk_factors: Object.entries(\n//     results\n//       .flatMap(u => u.risk_factors || [])\n//       .map(f => f.replace(/[🔴🟡🟠✅]/g, '').trim())\n//       .reduce((acc, factor) => {\n//         if (factor) acc[factor] = (acc[factor] || 0) + 1;\n//         return acc;\n//       }, {})\n//   )\n//     .sort((a, b) => b[1] - a[1])\n//     .slice(0, 5)\n//     .map(([factor, count]) => `${factor} (${count} users)`)\n//     .join('; '),\n  \n//   // Data Source\n//   data_source: \"API /v2/ml/churns\",\n//   domain: inputData.domain || \"N/A\",\n//   baseUrl: inputData.baseUrl || \"N/A\"\n// };\n\n// // ========== DATABASE SAVE FORMAT ==========\n// const databaseRecord = {\n//   // Primary Key\n//   id: summaryData.analysis_id,\n  \n//   // Timestamps\n//   created_at: summaryData.analysis_date,\n//   analyzed_date: summaryData.analyzed_at,\n  \n//   // Counts\n//   total_analyzed: summaryData.total_users_analyzed,\n//   total_predicted: summaryData.total_users_predicted,\n  \n//   // Risk Levels\n//   high_risk_count: summaryData.high_risk_users,\n//   medium_risk_count: summaryData.medium_risk_users,\n//   low_risk_count: summaryData.low_risk_users,\n  \n//   // Player Status\n//   churned_count: summaryData.churned_users,\n//   at_risk_count: summaryData.at_risk_users,\n//   dormant_count: summaryData.dormant_users,\n//   active_count: summaryData.active_users,\n  \n//   // Critical Alerts\n//   urgent_action_count: summaryData.immediate_action_required,\n//   high_value_risk_count: summaryData.high_value_at_risk,\n  \n//   // Financial Impact\n//   total_deposit_at_risk: summaryData.total_deposit_at_risk,\n  \n//   // Averages\n//   avg_churn_score: summaryData.avg_churn_score,\n//   avg_days_inactive: summaryData.avg_days_inactive,\n  \n//   // Campaign Priorities (Flat Structure)\n//   urgent_reactivation_count: summaryData.urgent_reactivation_count,\n//   engagement_campaign_count: summaryData.engagement_campaign_count,\n//   dormant_wakeup_count: summaryData.dormant_wakeup_count,\n//   vip_intervention_count: summaryData.vip_intervention_count,\n  \n//   // Top Risk Factors (Clean Text)\n//   top_risk_factors: summaryData.top_risk_factors,\n  \n//   // Metadata\n//   data_source: summaryData.data_source,\n//   domain: summaryData.domain,\n//   base_url: summaryData.baseUrl\n// };\n\n// // ========== PREPARE USER DATA FOR DATABASE (IMPORTANT COLUMNS ONLY) ==========\n// const userChurnData = results.map(user => {\n//   // Clean risk factors - remove emojis and format nicely\n//   const cleanRiskFactors = (user.risk_factors || [])\n//     .map(factor => factor.replace(/[🔴🟡🟠✅]/g, '').trim())\n//     .join('; ');\n  \n//   // Clean retention actions - remove emojis and format nicely\n//   const cleanRetentionActions = (user.retention_actions || [])\n//     .map(action => action.replace(/[💰💳🔥🎁🏆🎮🚨📧⚠️💤💎👋]/g, '').trim())\n//     .join('; ');\n\n//   return {\n//     // User Identity\n//     user_id: user.user_id,\n//     email: user.email,\n//     country: user.country,\n    \n//     // Churn Prediction (Core)\n//     churn_risk_level: user.churn_risk.replace(/[🔴🟡🟠🟢]/g, '').trim(),\n//     churn_score: user.churn_score,\n//     player_status: user.player_status,\n    \n//     // Risk Analysis (Cleaned)\n//     risk_factors: cleanRiskFactors || null,\n//     retention_actions: cleanRetentionActions || null,\n    \n//     // Activity Metrics (Key Indicators)\n//     days_since_last_game: user.days_since_last_game === \"Never\" ? null : parseFloat(user.days_since_last_game),\n//     days_since_last_deposit: user.days_since_last_deposit === \"Never\" ? null : parseFloat(user.days_since_last_deposit),\n//     games_last_7_days: user.games_last_7_days,\n//     games_last_30_days: user.games_last_30_days,\n//     total_games: user.total_games,\n    \n//     // Financial Data (Revenue Impact)\n//     total_deposits: user.total_deposits,\n//     total_deposit_amount: parseFloat(user.total_deposit_amount || 0),\n//     total_wagered: parseFloat(user.total_wagered || 0),\n    \n//     // Bonus Behavior (Engagement Indicator)\n//     total_bonuses: user.total_bonuses,\n//     bonus_cancel_rate: parseFloat(user.bonus_cancel_rate || 0),\n//     bonus_completion_rate: parseFloat(user.bonus_completion_rate || 0),\n    \n//     // Account Info\n//     account_age_days: user.account_age_days,\n//     kyc_status: user.kyc_status,\n//     is_vip: user.is_vip === \"Yes\" ? 1 : 0,\n    \n//     // Timestamps\n//     analyzed_at: summaryData.analyzed_at,\n//     analysis_id: summaryData.analysis_id,\n//     created_at: new Date().toISOString()\n//   };\n// });\n\n// // Return summary, database record, and user data\n// return {\n//   summary: summaryData,\n//   database_record: databaseRecord,\n//   user_churn_predictions: userChurnData,\n//   total_user_records: userChurnData.length,\n//   url: inputData.url || null,\n//   domain: inputData.domain || null,\n//   baseUrl: inputData.baseUrl || null\n// };\n\n\n\n\n\n\n\n// ========== GET DATA FROM PREVIOUS NODE ==========\nconst inputData = $input.first().json;\nconst results = inputData.predictions || [];\nconst totalAnalyzed = inputData.total_users_analyzed || 0;\n\n// ========== SUMMARY DATA FOR DATABASE ==========\nconst summaryData = {\n  // Run Information\n  analysis_id: `CHURN_${Date.now()}`, // Unique ID for this analysis run\n  analysis_date: new Date().toISOString(),\n  analyzed_at: new Date().toISOString().split('T')[0],\n  \n  // Overall Statistics\n  total_users_analyzed: totalAnalyzed,\n  total_users_predicted: results.length,\n  \n  // Risk Distribution\n  high_risk_users: results.filter(u => u.churn_score >= 60).length,\n  medium_risk_users: results.filter(u => u.churn_score >= 30 && u.churn_score < 60).length,\n  low_risk_users: results.filter(u => u.churn_score < 30).length,\n  \n  // Status Distribution\n  churned_users: results.filter(u => u.player_status === \"Churned\").length,\n  at_risk_users: results.filter(u => u.player_status === \"At Risk\").length,\n  dormant_users: results.filter(u => u.player_status === \"Dormant\").length,\n  active_users: results.filter(u => u.player_status === \"Active\").length,\n  \n  // Critical Metrics\n  immediate_action_required: results.filter(u => u.churn_score >= 70).length,\n  users_inactive_60plus_days: results.filter(u => {\n    const days = parseFloat(u.days_since_last_game);\n    return days >= 60 && days !== 999 && !isNaN(days);\n  }).length,\n  users_no_deposit_90plus_days: results.filter(u => {\n    const days = parseFloat(u.days_since_last_deposit);\n    return days >= 90 && days !== 999 && !isNaN(days);\n  }).length,\n  \n  // Value at Risk\n  high_value_at_risk: results.filter(u => {\n    const deposit = parseFloat(u.total_deposit_amount);\n    return deposit > 500 && u.churn_score >= 40;\n  }).length,\n  \n  total_deposit_at_risk: results\n    .filter(u => u.churn_score >= 60)\n    .reduce((sum, u) => sum + parseFloat(u.total_deposit_amount || 0), 0)\n    .toFixed(2),\n  \n  // Retention Campaign Priorities\n  urgent_reactivation_count: results.filter(u => u.player_status === \"Churned\").length,\n  engagement_campaign_count: results.filter(u => u.player_status === \"At Risk\").length,\n  dormant_wakeup_count: results.filter(u => u.player_status === \"Dormant\").length,\n  vip_intervention_count: results.filter(u => {\n    const deposit = parseFloat(u.total_deposit_amount);\n    return deposit > 500 && u.churn_score > 40;\n  }).length,\n  \n  // Average Metrics\n  avg_churn_score: results.length > 0 \n    ? (results.reduce((sum, u) => sum + u.churn_score, 0) / results.length).toFixed(2)\n    : \"0.00\",\n  avg_days_inactive: results.length > 0\n    ? (results.reduce((sum, u) => {\n        const days = parseFloat(u.days_since_last_game);\n        return sum + (days === 999 || isNaN(days) ? 0 : days);\n      }, 0) / results.length).toFixed(2)\n    : \"0.00\",\n  \n  // Top Risk Factors (Cleaned - most common)\n  top_risk_factors: Object.entries(\n    results\n      .flatMap(u => u.risk_factors || [])\n      .map(f => f.replace(/[🔴🟡🟠✅]/g, '').trim())\n      .reduce((acc, factor) => {\n        if (factor) acc[factor] = (acc[factor] || 0) + 1;\n        return acc;\n      }, {})\n  )\n    .sort((a, b) => b[1] - a[1])\n    .slice(0, 5)\n    .map(([factor, count]) => `${factor} (${count} users)`)\n    .join('; '),\n  \n  // Data Source\n  data_source: \"API /v2/ml/churns\",\n  domain: inputData.domain || \"N/A\",\n  baseUrl: inputData.baseUrl || \"N/A\"\n};\n\n// ========== DATABASE SAVE FORMAT ==========\nconst databaseRecord = {\n  // Primary Key\n  id: summaryData.analysis_id,\n  \n  // Timestamps\n  created_at: summaryData.analysis_date,\n  analyzed_date: summaryData.analyzed_at,\n  \n  // Counts\n  total_analyzed: summaryData.total_users_analyzed,\n  total_predicted: summaryData.total_users_predicted,\n  \n  // Risk Levels\n  high_risk_count: summaryData.high_risk_users,\n  medium_risk_count: summaryData.medium_risk_users,\n  low_risk_count: summaryData.low_risk_users,\n  \n  // Player Status\n  churned_count: summaryData.churned_users,\n  at_risk_count: summaryData.at_risk_users,\n  dormant_count: summaryData.dormant_users,\n  active_count: summaryData.active_users,\n  \n  // Critical Alerts\n  urgent_action_count: summaryData.immediate_action_required,\n  high_value_risk_count: summaryData.high_value_at_risk,\n  \n  // Financial Impact\n  total_deposit_at_risk: summaryData.total_deposit_at_risk,\n  \n  // Averages\n  avg_churn_score: summaryData.avg_churn_score,\n  avg_days_inactive: summaryData.avg_days_inactive,\n  \n  // Campaign Priorities (Flat Structure)\n  urgent_reactivation_count: summaryData.urgent_reactivation_count,\n  engagement_campaign_count: summaryData.engagement_campaign_count,\n  dormant_wakeup_count: summaryData.dormant_wakeup_count,\n  vip_intervention_count: summaryData.vip_intervention_count,\n  \n  // Top Risk Factors (Clean Text)\n  top_risk_factors: summaryData.top_risk_factors,\n  \n  // Metadata\n  data_source: summaryData.data_source,\n  domain: summaryData.domain,\n  base_url: summaryData.baseUrl\n};\n\n// ========== PREPARE USER DATA FOR DATABASE (IMPORTANT COLUMNS ONLY) ==========\nconst userChurnData = results.map(user => {\n  // Clean risk factors - remove emojis and format nicely\n  const cleanRiskFactors = (user.risk_factors || [])\n    .map(factor => factor.replace(/[🔴🟡🟠✅]/g, '').trim())\n    .join('; ');\n  \n  // Clean retention actions - remove emojis and format nicely\n  const cleanRetentionActions = (user.retention_actions || [])\n    .map(action => action.replace(/[💰💳🔥🎁🏆🎮🚨📧⚠️💤💎👋]/g, '').trim())\n    .join('; ');\n\n  return {\n    // ✅ ADD METADATA TO EACH USER (IMPORTANT!)\n    url: inputData.url,\n    domain: inputData.domain,\n    baseUrl: inputData.baseUrl,\n    \n    // User Identity\n    user_id: user.user_id,\n    email: user.email,\n    country: user.country,\n    \n    // Churn Prediction (Core)\n    churn_risk_level: user.churn_risk.replace(/[🔴🟡🟠🟢]/g, '').trim(),\n    churn_score: user.churn_score,\n    player_status: user.player_status,\n    \n    // Risk Analysis (Cleaned)\n    risk_factors: cleanRiskFactors || null,\n    retention_actions: cleanRetentionActions || null,\n    \n    // Activity Metrics (Key Indicators)\n    days_since_last_game: user.days_since_last_game === \"Never\" ? 999 : parseFloat(user.days_since_last_game),\n    days_since_last_deposit: user.days_since_last_deposit === \"Never\" ? 999 : parseFloat(user.days_since_last_deposit),\n    games_last_7_days: user.games_last_7_days,\n    games_last_30_days: user.games_last_30_days,\n    total_games: user.total_games,\n    \n    // Financial Data (Revenue Impact)\n    total_deposits: user.total_deposits,\n    total_deposit_amount: parseFloat(user.total_deposit_amount || 0),\n    total_wagered: parseFloat(user.total_wagered || 0),\n    \n    // Bonus Behavior (Engagement Indicator)\n    total_bonuses: user.total_bonuses,\n    bonus_cancel_rate: parseFloat(user.bonus_cancel_rate || 0),\n    bonus_completion_rate: parseFloat(user.bonus_completion_rate || 0),\n    \n    // Account Info\n    account_age_days: user.account_age_days,\n    kyc_status: user.kyc_status,\n    is_vip: user.is_vip === \"Yes\" ? true : false,  // ✅ Convert to boolean\n    \n    // Timestamps\n    analyzed_at: summaryData.analyzed_at,\n    analysis_id: summaryData.analysis_id,\n    created_at: new Date().toISOString()\n  };\n});\n\n// ✅ RETURN FORMAT - Keep everything for flexibility\nreturn {\n  summary: summaryData,\n  database_record: databaseRecord,\n  user_churn_predictions: userChurnData,\n  total_user_records: userChurnData.length,\n  url: inputData.url || null,\n  domain: inputData.domain || null,\n  baseUrl: inputData.baseUrl || null\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        304
+      ],
+      "id": "b4eaf757-d51c-4c51-9b46-c74ee0497a26",
+      "name": "Summary2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  baseUrl: $('Dynamically fetch the url,baseUrl,domain2').first().json.baseUrl,\n  domain: $('Dynamically fetch the url,baseUrl,domain2').first().json.domain,\n  url: $input.first().json.url\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        304
+      ],
+      "id": "825f0be1-4902-4726-adab-98b6b1543abe",
+      "name": "Page Loop2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return{baseUrl:'https://canada777.com', domain: 'canada777',url:'https://canada777.com/api/v2/ml/churns' };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1fead3a8-409e-42be-8afc-290fc2d2c736",
+      "name": "canada777 churn1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        256
+      ],
+      "id": "661ef03f-3ef3-4a78-95fe-60cc658396d1",
+      "name": "Schedule Trigger For Churn1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return{baseUrl:'https://backoffice.america777.com', domain: 'america777',url:'https://backoffice.america777.com/api/v2/ml/churns'};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        224
+      ],
+      "id": "6afa6d89-1281-4179-ac65-00da7e56a7c7",
+      "name": "America"
+    },
+    {
+      "parameters": {
+        "jsCode": "return{baseUrl:'https://backoffice.brasil777.com', domain: 'brasil777',url:'https://backoffice.brasil777.com/api/v2/ml/churns'};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        400
+      ],
+      "id": "c931638e-7ea4-4b2d-a0f7-841ff744d98d",
+      "name": "Brasil"
+    },
+    {
+      "parameters": {
+        "jsCode": "return{baseUrl:'https://backoffice.europa777.com', domain: 'europa777',url:'https://backoffice.europa777.com/api/v2/ml/churns'};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        576
+      ],
+      "id": "982397a8-de90-45f7-99b1-f993444fd89b",
+      "name": "Europa"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "POST DATA": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data format": {
+      "main": [
+        [
+          {
+            "node": "POST DATA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Get the URL2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Page Loop2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dynamically fetch the url,baseUrl,domain2": {
+      "main": [
+        [
+          {
+            "node": "Get the URL2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the URL2": {
+      "main": [
+        [
+          {
+            "node": "ML Analysis2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ML Analysis2": {
+      "main": [
+        [
+          {
+            "node": "Summary2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary2": {
+      "main": [
+        [
+          {
+            "node": "Data format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page Loop2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "canada777 churn1": {
+      "main": [
+        [
+          {
+            "node": "Dynamically fetch the url,baseUrl,domain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger For Churn1": {
+      "main": [
+        [
+          {
+            "node": "canada777 churn1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "America",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Brasil",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Europa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "America": {
+      "main": [
+        [
+          {
+            "node": "Dynamically fetch the url,baseUrl,domain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brasil": {
+      "main": [
+        [
+          {
+            "node": "Dynamically fetch the url,baseUrl,domain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Europa": {
+      "main": [
+        [
+          {
+            "node": "Dynamically fetch the url,baseUrl,domain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "11e8ed53-9fd3-4c3a-b8b5-824ad9baf670",
+  "meta": {
+    "instanceId": "cece7bf37f7b79affe4067e35b4622d73b91d88b374b0900536e7db91a549fed"
+  },
+  "id": "tNRlGD0seSk3CJi4",
+  "tags": []
+}
